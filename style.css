@@ -1,0 +1,214 @@
+/* General Body and Canvas Styling */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #000;
+}
+
+#renderCanvas {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    outline: none;
+}
+
+/* UI Container and Elements */
+#ui-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allows mouse events to pass through to the canvas */
+    color: white;
+}
+
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+#interaction-prompt {
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid #fff;
+    font-size: 16px;
+}
+
+/* Main UI Panel (Bottom Left) */
+#ui-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 350px;
+    height: 600px;
+    background-color: rgba(17, 24, 39, 0.8); /* bg-gray-900 with opacity */
+    border: 1px solid #4b5563; /* border-gray-600 */
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    pointer-events: all; /* This panel should be interactive */
+    font-family: 'Special Elite', cursive;
+    transition: box-shadow 0.5s ease-in-out, border-color 0.5s ease-in-out;
+}
+
+/* --- NEW DANGER STATE STYLE --- */
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.danger-state {
+    border-color: #dc2626;
+    animation: pulse-red 2s infinite;
+}
+
+
+#eva-profile {
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #4b5563;
+}
+
+#eva-portrait {
+    width: 60px;
+    height: 60px;
+    background-color: #f9a8d4; /* bg-pink-300 */
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    border: 3px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #1f2937; /* text-gray-800 */
+    transition: all 0.5s ease;
+}
+
+.mood-calm { border-color: #34d399; } /* emerald-400 */
+.mood-suspicious { border-color: #fbbf24; } /* amber-400 */
+.mood-agitated { border-color: #f87171; } /* red-400 */
+.mood-hostile { border-color: #dc2626; box-shadow: 0 0 15px #dc2626; } /* red-600 */
+
+#dialogue-box {
+    min-height:200px;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column-reverse; /* Newest messages at the bottom */
+}
+
+#dialogue-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message { padding: 8px 12px; border-radius: 8px; max-width: 90%; }
+.user-message { background-color: #db2777; align-self: flex-end; } /* pink-600 */
+.eva-message { background-color: #374151; align-self: flex-start; } /* gray-700 */
+.system-message { font-style: italic; color: #9ca3af; text-align: center; align-self: center; } /* gray-400 */
+
+#input-area {
+    padding-top: 10px;
+    border-top: 1px solid #4b5563;
+}
+
+.prompt-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+#key-icon {
+    font-size: 20px;
+}
+
+#prompt-form { display: flex; flex-direction: column; gap: 5px; }
+#prompt-input {
+    background-color: #374151; /* gray-700 */
+    border: 1px solid #4b5563;
+    border-radius: 5px;
+    color: white;
+    padding: 8px;
+    resize: none;
+    height: 60px;
+}
+#prompt-form button {
+    background-color: #db2777; /* pink-600 */
+    border: none;
+    border-radius: 5px;
+    color: white;
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+#prompt-form button:hover { background-color: #be185d; } /* pink-700 */
+#prompt-form button:disabled { background-color: #831843; cursor: not-allowed; } /* pink-900 */
+
+
+#loading-indicator { text-align: center; color: #f9a8d4; }
+
+/* Modals */
+#modal-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.hidden {
+    display: none !important; 
+}
+
+#welcome-modal, #end-modal {
+    background-color: #1f2937; /* gray-800 */
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid #4b5563;
+    text-align: center;
+    max-width: 500px;
+    pointer-events: all;
+}
+#welcome-modal h1, #end-modal h1 { font-size: 2em; margin-bottom: 15px; color: #f9a8d4; }
+#welcome-modal p, #end-modal p { margin-bottom: 20px; line-height: 1.6; }
+#welcome-modal button, #end-modal button {
+    background-color: #db2777;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+#welcome-modal button:hover, #end-modal button:hover { background-color: #be185d; }
+
+/* Scrollbar styling */
+#dialogue-box::-webkit-scrollbar { width: 8px; }
+#dialogue-box::-webkit-scrollbar-track { background: #1f2937; }
+#dialogue-box::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 10px; }
