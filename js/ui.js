@@ -16,12 +16,17 @@ const keyIcon = document.getElementById('key-icon');
 const loadingIndicator = document.getElementById('loading-indicator');
 const submitButton = document.querySelector('#prompt-form button');
 const promptInput = document.getElementById('prompt-input');
+const playerNameInput = document.getElementById('player-name-input'); // NEW: Player name input
 
+let winCallback = null; // NEW: Callback for win condition
 
-export function initUI() {
+export function initUI(onWinGameCallback) { // NEW: Accepts onWinGameCallback
+    winCallback = onWinGameCallback; // Store the callback
+
     startGameBtn.addEventListener('click', () => {
+        const playerName = playerNameInput.value.trim();
+        setGameState({ isPaused: false, playerName: playerName || 'Player' }); // Set player name
         modalContainer.classList.add('hidden');
-        setGameState({ isPaused: false });
         document.getElementById('renderCanvas').requestPointerLock();
     });
 
@@ -101,4 +106,8 @@ export function showEndScreen(isWin, message, finalScore) {
     modalContainer.classList.remove('hidden');
     endModal.classList.remove('hidden');
     welcomeModal.classList.add('hidden');
+
+    if (isWin && winCallback) { // NEW: Trigger win callback
+        winCallback(getGameState().playerName);
+    }
 }

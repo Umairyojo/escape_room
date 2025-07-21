@@ -3,10 +3,12 @@ import { getGameState, setGameState } from './gameState.js';
 
 let scene;
 let camera;
+let keyLocationMesh; // NEW: To store the mesh where the key is located
 
-export function initInteractions(babylonScene, playerCamera) {
+export function initInteractions(babylonScene, playerCamera, keyMesh) { // NEW: Accepts keyMesh
     scene = babylonScene;
     camera = playerCamera;
+    keyLocationMesh = keyMesh; // Store the key mesh
 
     window.addEventListener("keydown", (event) => {
         if (getGameState().isPaused || getGameState().isGameOver) return;
@@ -19,21 +21,40 @@ export function initInteractions(babylonScene, playerCamera) {
         }
     });
 
-    return { checkForInteractable };
+    // Modified to return the key location mesh's name if it's the key location
+    return { 
+        checkForInteractable: () => {
+            const ray = new BABYLON.Ray(camera.position, camera.getForwardRay().direction, 4);
+            const hit = scene.pickWithRay(ray);
+
+            if (hit.pickedMesh && hit.pickedMesh.isInteractable) {
+                // If the picked mesh is the key location and the player doesn't have the key yet
+                if (hit.pickedMesh.isKeyLocation && !getGameState().hasKey) {
+                    // Return the mesh with a special name to indicate it's the key location
+                    // This allows ui.js to display a more specific hint
+                    return { name: `[Key Location] ${hit.pickedMesh.name}`, mesh: hit.pickedMesh };
+                }
+                return { name: hit.pickedMesh.name, mesh: hit.pickedMesh };
+            }
+            return null;
+        }
+    };
 }
 
-function checkForInteractable() {
-    const ray = new BABYLON.Ray(camera.position, camera.getForwardRay().direction, 4); // Increased ray length for larger rooms
-    const hit = scene.pickWithRay(ray);
-
-    if (hit.pickedMesh && hit.pickedMesh.isInteractable) {
-        return hit.pickedMesh;
-    }
-    return null;
-}
-
-function handleInteraction(mesh) {
+function handleInteraction(interactable) {
+    const mesh = interactable.mesh; // Access the actual mesh
     const gameState = getGameState();
+
+    // --- NEW: Key Interaction Logic ---
+    if (mesh.isKeyLocation && !gameState.hasKey) {
+        setGameState({ hasKey: true });
+        addMessage('system', `You found a key ${mesh.keyHint}! It must be for the main door.`);
+        updateUI();
+        mesh.isInteractable = false; // Make it non-interactable after key is found
+        // Optional: Change material or make key disappear visually
+        // mesh.dispose(); // If you want the mesh to disappear entirely
+        return; // Key found, no other interaction needed for this mesh
+    }
 
     switch (mesh.name) {
         case "door":
@@ -41,7 +62,7 @@ function handleInteraction(mesh) {
                 const newScore = gameState.promptCount + 10;
                 showEndScreen(true, "You slot the key into a hidden lock. The door clicks open. You escaped... but she's still in there.", newScore);
             } else {
-                addMessage('system', "This is the main exit. It's locked. Only E.V.A. can open it.");
+                addMessage('system', "This is the main exit. It's locked. Only E.V.A. can open it, or perhaps a key...");
             }
             break;
         case "TV":
@@ -80,16 +101,9 @@ function handleInteraction(mesh) {
         case "Washing Machine":
             addMessage('system', "A new washing machine. She likes to keep everything clean and perfect.");
             break;
+        // Removed the specific painting interaction for the key, as it's now dynamic
         case "painting":
-            let count = gameState.paintingClickCount + 1;
-            setGameState({ paintingClickCount: count });
-            if (count >= 5 && !gameState.hasKey) {
-                setGameState({ hasKey: true });
-                addMessage('system', "You press a corner of the painting for the fifth time. A hidden panel pops open, revealing a key!");
-                updateUI();
-            } else {
-                addMessage('system', "An abstract painting in the master bedroom. E.V.A. says it represents your 'eternal love'.");
-            }
+            addMessage('system', "An abstract painting in the master bedroom. E.V.A. says it represents your 'eternal love'.");
             break;
         default:
             addMessage('system', `You look at the ${mesh.name}.`);

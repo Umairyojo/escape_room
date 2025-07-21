@@ -9,6 +9,9 @@ const gameState = {
     isGameOver: false,
     paintingClickCount: 0,
     chatHistory: [],
+    trustScore: 0,
+    isThinking: false,
+    playerName: 'Player', // NEW: Default player name
 };
 
 export function getGameState() {
@@ -30,5 +33,8 @@ export function resetGameState() {
         isGameOver: false,
         paintingClickCount: 0,
         chatHistory: [],
+        trustScore: 0,
+        isThinking: false,
+        playerName: 'Player', // Reset player name
     });
 }

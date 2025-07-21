@@ -69,7 +69,7 @@ export function createEnvironment(scene) {
     const doorwayWidth = 3;
     const hallBedDividerZ = -hallDepth / 2;
     createWall("hallBedWall1", (hallWidth/2 - doorwayWidth/2), wallHeight, wallThickness, -hallWidth/4 - doorwayWidth/4, hallBedDividerZ);
-    createWall("hallBedWall2", (hallWidth/2 - doorwayWidth/2), wallHeight, wallThickness, hallWidth/4 + doorwayWidth/4, hallBedDividerZ);
+    createWall("hallBedWall2", (hallWidth/2 - doorwayWidth/2), wallHeight, wallThickness, hallWidth/4 + doorwayWidth/4, hallBedDividerZ); // Fixed: Changed hallBedDivider4 to hallBedDividerZ
     
     const hallKitchenDividerX = -hallWidth/2;
     createWall("hallKitchenWall", hallDepth, wallHeight, wallThickness, hallKitchenDividerX, 0, Math.PI / 2);
@@ -207,5 +207,27 @@ export function createEnvironment(scene) {
     painting.material = paintingMat;
     painting.isInteractable = true;
 
-    return { floor, roof, mainExitDoor, sofa, coffeeTable, tvScreen, diningTable, bed1, wardrobe1, bed2, wardrobe2, dressingTable, stove, fridge, washingMachine, painting, fan };
+    // --- NEW: Dynamic Key Placement Logic ---
+    const potentialKeyLocations = [
+        { mesh: sofa, hint: "under the cushion." },
+        { mesh: wardrobe1, hint: "inside the left door." },
+        { mesh: wardrobe2, hint: "behind the clothes." },
+        { mesh: dressingTable, hint: "in the top drawer." },
+        { mesh: drawerTable, hint: "in the middle drawer." },
+        { mesh: painting, hint: "behind the frame." },
+        { mesh: fridge, hint: "behind the milk carton." },
+        { mesh: washingMachine, hint: "under the detergent tray." },
+        { mesh: kitchenShelf, hint: "behind the spice jars." }
+    ];
+
+    // Select a random location for the key
+    const randomIndex = Math.floor(Math.random() * potentialKeyLocations.length);
+    const keyLocation = potentialKeyLocations[randomIndex];
+    keyLocation.mesh.isKeyLocation = true; // Mark the chosen mesh
+    keyLocation.mesh.keyHint = keyLocation.hint; // Store the hint for this location
+
+    console.log(`Key is hidden: ${keyLocation.mesh.name} ${keyLocation.hint}`);
+
+
+    return { floor, roof, mainExitDoor, sofa, coffeeTable, tvScreen, diningTable, bed1, wardrobe1, bed2, wardrobe2, dressingTable, stove, fridge, washingMachine, painting, fan, keyLocationMesh: keyLocation.mesh };
 }

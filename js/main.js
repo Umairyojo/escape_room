@@ -24,20 +24,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Create Player
     game.player = createPlayer(game.scene);
 
-    // Create Environment
+    // Create Environment and get the key location mesh
     game.environment = createEnvironment(game.scene);
+    const keyLocationMesh = game.environment.keyLocationMesh; // NEW: Get the key location mesh
 
-    // Initialize UI and Interactions
+    // Initialize UI and Interactions, passing the key location mesh
     initUI();
-    game.interactions = initInteractions(game.scene, game.player.camera);
+    game.interactions = initInteractions(game.scene, game.player.camera, keyLocationMesh); // NEW: Pass keyLocationMesh
 
     // Main game loop
     engine.runRenderLoop(() => {
         if (!getGameState().isPaused) {
             game.scene.render();
-            const interactable = game.interactions.checkForInteractable();
-            if (interactable) {
-                showInteractionPrompt(interactable.name);
+            const interactableInfo = game.interactions.checkForInteractable(); // NEW: Get interactable info
+            if (interactableInfo) {
+                // If it's the key location, display a more specific hint
+                if (interactableInfo.name.startsWith('[Key Location]')) {
+                    showInteractionPrompt(`[E] to search ${interactableInfo.mesh.name} ${interactableInfo.mesh.keyHint}`);
+                } else {
+                    showInteractionPrompt(`[E] to interact with ${interactableInfo.name}`);
+                }
             } else {
                 hideInteractionPrompt();
             }
@@ -55,4 +61,3 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.location.reload();
     });
 });
-
