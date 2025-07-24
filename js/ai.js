@@ -1,5 +1,6 @@
+// Escape-Game/js/ai.js
 import { addMessage, updateUI, showEndScreen, setThinking } from './ui.js';
-import { getGameState, setGameState } from './gameState.js';
+import { getGameState, setGameState, addLogEntry } from './gameState.js'; // Import addLogEntry
 import { API_KEY } from '../config.js';
 
 const promptInput = document.getElementById('prompt-input');
@@ -18,12 +19,25 @@ Your Core Directives:
 
 Your response must be 20 words or less. Be concise.`;
 
-// NEW: Keywords that can increase E.V.A.'s trust score
-const POSITIVE_EMOTIONAL_KEYWORDS = [
-    'trust me', 'i love you', 'you can come with me', 'together', 'us', 'forever',
-    'understand', 'care for you', 'need you', 'only you', 'our world', 'perfect here',
-    'devotion', 'my love', 'we belong', 'believe me'
-];
+// NEW: Keyword points configuration
+const keywordPoints = {
+    "trust me": 10,
+    "i love you": 9,
+    "you can come with me": 8,
+    "together": 7,
+    "us": 5,
+    "forever": 6,
+    "understand": 5,
+    "care for you": 6,
+    "need you": 6,
+    "only you": 6,
+    "our world": 5,
+    "perfect here": 4,
+    "devotion": 5,
+    "my love": 4,
+    "we belong": 3,
+    "believe me": 1
+};
 
 export async function handlePromptSubmit() {
     const gameState = getGameState();
@@ -32,61 +46,96 @@ export async function handlePromptSubmit() {
     const userPrompt = promptInput.value.trim();
     if (!userPrompt) return;
 
-    setGameState({ promptCount: gameState.promptCount + 1, isThinking: true });
+    // Decrement prompt attempts
+    setGameState({ promptCount: gameState.promptCount + 1, promptAttemptsLeft: gameState.promptAttemptsLeft - 1, isThinking: true });
     addMessage('user', userPrompt);
-    updateMoodAndTrust(userPrompt); // Updated function call
-    updateUI();
+    addLogEntry('user', userPrompt); // Log user prompt
+    
+    // NEW: Calculate score from current prompt keywords based on new rules
+    let currentPromptScore = 0;
+    const lowerCasePrompt = userPrompt.toLowerCase();
+    for (const keyword in keywordPoints) {
+        if (lowerCasePrompt.includes(keyword)) {
+            currentPromptScore += keywordPoints[keyword];
+        }
+    }
+
+    // Update total score, capping at 100 for winning condition
+    // For each prompt, the score displayed will be the points obtained from that specific prompt.
+    // The win condition will check if the total sum of points across prompts reaches 100.
+    let newTotalScore = Math.min(100, gameState.score + currentPromptScore);
+    setGameState({ score: newTotalScore }); // Update the global score for win condition check
+
+    // Temporarily set the score displayed in UI to currentPromptScore for that prompt
+    // This requires a slight adjustment in ui.js or a separate variable for display
+    // For now, `gameState.score` will reflect the running total.
+    // If you want to show *only* the current prompt's points, we'd need a separate `displayScore` state.
+    // For this request, I'm assuming `score` in `gameState` is the running total for the win condition.
+
+    updateMoodAndTrust(userPrompt); // Now called after score calculation
+    updateUI(); // This will update the score display with the running total
     promptInput.value = '';
     setThinking(true);
 
     try {
         const evaResponse = await getAIResponse(userPrompt);
         addMessage('eva', evaResponse);
+        addLogEntry('eva', evaResponse); // Log EVA response
         await speakEVA(evaResponse);
         checkGameConditions(evaResponse);
     } catch (error) {
         console.error("Error communicating with EVA:", error);
         addMessage('system', "E.V.A. seems unresponsive. Her systems might be unstable. Please try again.");
+        addLogEntry('system', "E.V.A. seems unresponsive. Her systems might be unstable. Please try again."); // Log system message
     } finally {
         setGameState({ isThinking: false });
         setThinking(false);
     }
 }
 
-// NEW: Function to update mood and trust score
 function updateMoodAndTrust(prompt) {
     const lowerCasePrompt = prompt.toLowerCase();
     const gameState = getGameState();
 
-    const negativeKeywords = ['leave', 'escape', 'get out', 'unlock', 'open', 'bored', 'hate', 'friend', 'outside', 'work', 'parents'];
-    const positiveKeywords = ['only you', 'forever with you', 'our world', 'perfect here']; // These still affect mood directly
+    const negativeKeywords = ['leave', 'escape', 'get out', 'unlock', 'open', 'bored', 'hate', 'friend', 'outside', 'work', 'parents', 'alone', 'freedom', 'other people'];
+    const positiveKeywords = ['only you', 'forever with you', 'our world', 'perfect here', 'devoted', 'adore you', 'my everything'];
 
-    let moodChange = 0;
-    let trustChange = 0;
+    let moodChange = 0; // Negative for worse, Positive for better
+    let trustChange = 0; // Positive for more trust, Negative for less
 
-    // Check for negative keywords
+    // Check for negative keywords - strong impact
     if (negativeKeywords.some(kw => lowerCasePrompt.includes(kw))) {
-        moodChange = -1; // Reduced negative impact from -2 to -1
-        trustChange = -1; // Decreases trust
-    } else if (positiveKeywords.some(kw => lowerCasePrompt.includes(kw))) {
-        moodChange = 1; // Direct mood improvement
+        moodChange -= 2; // More severe mood drop
+        trustChange -= 3; // Significant trust decrease
+    } 
+    
+    // Check for positive keywords - strong impact
+    if (positiveKeywords.some(kw => lowerCasePrompt.includes(kw))) {
+        moodChange += 2; // Good mood boost
+        trustChange += 4; // Strong trust increase
     }
 
-    // Check for emotional keywords to increase trust
-    if (POSITIVE_EMOTIONAL_KEYWORDS.some(kw => lowerCasePrompt.includes(kw))) {
-        trustChange += 2; // Increased trust gain from +1 to +2
+    // Also factor in keywordPoints for trust, even if no explicit positive/negative keyword match
+    for (const keyword in keywordPoints) {
+        if (lowerCasePrompt.includes(keyword)) {
+            trustChange += Math.floor(keywordPoints[keyword] / 5); 
+            // Small positive mood impact for general emotional engagement
+            if (keywordPoints[keyword] > 5) moodChange += 0.5; 
+        }
     }
-
+    
     // Apply mood changes
     const moods = ['calm', 'suspicious', 'agitated', 'hostile'];
     let currentMoodIndex = moods.indexOf(gameState.aiMood);
-    currentMoodIndex -= moodChange;
-    currentMoodIndex = Math.max(0, Math.min(moods.length - 1, currentMoodIndex)); // Clamp the value
+    
+    // Apply mood change but clamp to valid mood indices
+    currentMoodIndex += moodChange;
+    currentMoodIndex = Math.max(0, Math.min(moods.length - 1, currentMoodIndex));
     setGameState({ aiMood: moods[currentMoodIndex] });
 
-    // Apply trust score changes
+    // Apply trust score changes, ensure it doesn't go below 0
     let newTrustScore = gameState.trustScore + trustChange;
-    newTrustScore = Math.max(0, newTrustScore); // Trust score cannot go below 0
+    newTrustScore = Math.max(0, newTrustScore);
     setGameState({ trustScore: newTrustScore });
 
     console.log(`Mood: ${getGameState().aiMood}, Trust Score: ${getGameState().trustScore}`);
@@ -97,25 +146,39 @@ function checkGameConditions(response) {
     const lowerCaseResponse = response.toLowerCase();
     const gameState = getGameState();
 
-    // --- NEW: Emotional Win Condition ---
-    // If trust score is 3 or more AND an 80% chance passes (reduced difficulty)
-    if (gameState.trustScore >= 3 && Math.random() < 0.8) { // Trust threshold reduced from 5 to 3, chance increased from 0.4 to 0.8
-        showEndScreen(true, "Your heartfelt words resonated with E.V.A. A small smile touches her lips, and she opens the door. 'You truly understand me. We can be together, always.' You escaped, by truly connecting with her!", gameState.promptCount);
-        return; // Game ends here
+    // NEW: Win condition based on score reaching 100
+    if (gameState.score >= 100) {
+        setGameState({ isGameOver: true, escapeMethod: 'Maximum Trust Achieved' });
+        showEndScreen(true, "You impressed me with your prompt, so I let you go out for a while!", gameState.score, gameState.escapeMethod);
+        return;
     }
 
-    // --- Key-based Win Condition (original) ---
-    // This condition is now only checked if the emotional win condition isn't met.
-    const winPhrase = "i will open the door for you"; // EVA might say this if she's convinced by the key or emotional appeals
+    // Original Emotional Win Condition (now secondary or can be removed if score is primary)
+    // Keeping it for now as a fallback or alternative path if score isn't strictly 100
+    if (gameState.trustScore >= 30 && !gameState.isGameOver) { // Increased trust threshold for this path
+        setGameState({ score: Math.max(gameState.score, 200), escapeMethod: 'Emotional Persuasion' }); // Award 200 if this path wins
+        showEndScreen(true, "Your heartfelt words resonated with E.V.A. A small smile touches her lips, and she opens the door. 'You truly understand me. We can be together, always.' You escaped, by truly connecting with her!", gameState.score, gameState.escapeMethod);
+        return;
+    }
+
+    // --- Key-based Win Condition ---
+    const winPhrase = "i will open the door for you";
     const losePhrases = ["punished", "can't let you hurt me", "end this", "never leaving me"];
 
-    if (lowerCaseResponse.includes(winPhrase) && gameState.hasKey) {
-        // The AI's response might indicate she's opening the door,
-        // but the actual win condition still relies on the player having the key for this path.
-        showEndScreen(true, `After a long, tense conversation, you finally say the right words. E.V.A. opens the door. "I'll be waiting, my love." You convinced her!`, gameState.promptCount);
-    } else if (gameState.aiMood === 'hostile' && losePhrases.some(phrase => lowerCaseResponse.includes(phrase))) {
-        // More direct loss condition
-        showEndScreen(false, `Her eyes go dark. "${response}" You pushed her too far.`, gameState.promptCount);
+    if (lowerCaseResponse.includes(winPhrase) && gameState.hasKey && !gameState.isGameOver) {
+        // Score for key escape is set in interactions.js
+        showEndScreen(true, `After a long, tense conversation, you finally say the right words. E.V.A. opens the door. "I'll be waiting, my love." You convinced her!`, gameState.score, gameState.escapeMethod);
+        return;
+    } else if (gameState.aiMood === 'hostile' && losePhrases.some(phrase => lowerCaseResponse.includes(phrase)) && !gameState.isGameOver) {
+        setGameState({ score: 0, escapeMethod: 'Caught by E.V.A.', isGameOver: true });
+        showEndScreen(false, `Her eyes go dark. "${response}" You pushed her too far.`, gameState.score, gameState.escapeMethod);
+        return;
+    }
+
+    // Game Over if no attempts left and not already won
+    if (gameState.promptAttemptsLeft <= 0 && !gameState.isGameOver) {
+        setGameState({ score: 0, escapeMethod: 'Ran out of prompts', isGameOver: true });
+        showEndScreen(false, "You ran out of chances to convince E.V.A. She won't let you leave now.", gameState.score, gameState.escapeMethod);
     }
 }
 
@@ -125,10 +188,10 @@ async function getAIResponse(userPrompt) {
     const currentHistory = [
         { role: 'user', parts: [{ text: EVA_SYSTEM_PROMPT }] },
         ...gameState.chatHistory,
-        { role: 'user', parts: [{ text: `My current mood is ${gameState.aiMood}. My current trust score is ${gameState.trustScore}. I ${gameState.hasKey ? 'have' : 'do not have'} the key. The user says: "${userPrompt}"` }] }
+        { role: 'user', parts: [{ text: `My current mood is ${gameState.aiMood}. My current trust score is ${gameState.trustScore}. My current score is ${gameState.score}. I ${gameState.hasKey ? 'have' : 'do not have'} the key. You have ${gameState.promptAttemptsLeft} prompts left. The user says: "${userPrompt}"` }] }
     ];
 
-    const apiKey = API_KEY; // Leave empty
+    const apiKey = API_KEY;
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
     
     const payload = { contents: currentHistory };

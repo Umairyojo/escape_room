@@ -1,3 +1,4 @@
+// Escape-Game/js/ui.js
 import { handlePromptSubmit } from './ai.js';
 import { getGameState, setGameState } from './gameState.js';
 
@@ -17,16 +18,22 @@ const loadingIndicator = document.getElementById('loading-indicator');
 const submitButton = document.querySelector('#prompt-form button');
 const promptInput = document.getElementById('prompt-input');
 const playerNameInput = document.getElementById('player-name-input'); // NEW: Player name input
+const scoreEl = document.getElementById('score'); // NEW: Score element
+const attemptsLeftEl = document.getElementById('attempts-left'); // NEW: Attempts Left element
+const objectKeywordPopup = document.getElementById('object-keyword-popup'); // NEW: Keyword popup
 
-let winCallback = null; // NEW: Callback for win condition
+let winCallback = null; 
+let _scene; // Declare a variable to hold the scene object
 
-export function initUI(onWinGameCallback) { // NEW: Accepts onWinGameCallback
-    winCallback = onWinGameCallback; // Store the callback
+export function initUI(babylonScene, onWinGameCallback) { 
+    _scene = babylonScene; // Store the scene object
+    winCallback = onWinGameCallback; 
 
     startGameBtn.addEventListener('click', () => {
         const playerName = playerNameInput.value.trim();
         setGameState({ isPaused: false, playerName: playerName || 'Player' }); // Set player name
         modalContainer.classList.add('hidden');
+        // This requestPointerLock is from the initial button click, a more robust one is in main.js
         document.getElementById('renderCanvas').requestPointerLock();
     });
 
@@ -34,6 +41,8 @@ export function initUI(onWinGameCallback) { // NEW: Accepts onWinGameCallback
         e.preventDefault();
         handlePromptSubmit();
     });
+
+    updateUI(); // Initial UI update
 }
 
 // Centralized function to manage the "thinking" state of the UI
@@ -60,6 +69,8 @@ export function addMessage(sender, text) {
 export function updateUI() {
     const gameState = getGameState();
     promptCountEl.textContent = gameState.promptCount;
+    scoreEl.textContent = gameState.score; // Update score display
+    attemptsLeftEl.textContent = gameState.promptAttemptsLeft; // Update attempts left display
     
     // --- UPDATED MOOD CONFIG ---
     // Added a 'danger' property for visual feedback
@@ -86,8 +97,8 @@ export function updateUI() {
     keyIcon.classList.toggle('hidden', !gameState.hasKey);
 }
 
-export function showInteractionPrompt(objectName) {
-    interactionPrompt.querySelector('p').textContent = `Press [E] to interact with ${objectName}`;
+export function showInteractionPrompt(message) {
+    interactionPrompt.querySelector('p').textContent = message;
     interactionPrompt.classList.remove('hidden');
 }
 
@@ -102,12 +113,43 @@ export function showEndScreen(isWin, message, finalScore) {
     document.getElementById('end-title').textContent = isWin ? "You Escaped!" : "Game Over";
     document.getElementById('end-message').textContent = message;
     document.getElementById('final-score').textContent = finalScore;
+    document.getElementById('end-player-name').textContent = `Player: ${getGameState().playerName}`; // Display player name 
+    document.getElementById('escape-method-summary').textContent = getGameState().escapeMethod; // Display escape method 
     
     modalContainer.classList.remove('hidden');
     endModal.classList.remove('hidden');
     welcomeModal.classList.add('hidden');
 
-    if (isWin && winCallback) { // NEW: Trigger win callback
+    if (isWin && winCallback) { // Trigger win callback
         winCallback(getGameState().playerName);
     }
+}
+
+// --- NEW: Keyword Popup Functions ---
+export function showKeywordPopup(keywords, mesh) {
+    // Corrected: Use camera's view and projection matrices for the transform
+    // The 'transform' parameter of BABYLON.Vector3.Project should be the view-projection matrix
+    if (!mesh || !keywords || keywords.length === 0 || !_scene || !_scene.activeCamera || !_scene.activeCamera.viewport) {
+        hideKeywordPopup();
+        return;
+    }
+
+    const camera = _scene.activeCamera;
+    const viewProjectionMatrix = camera.getViewMatrix().multiply(camera.getProjectionMatrix());
+
+    const screenPosition = BABYLON.Vector3.Project(
+        mesh.absolutePosition,
+        BABYLON.Matrix.Identity(), // World matrix of the mesh (assuming identity if not parented)
+        viewProjectionMatrix,      // Combined view and projection matrix
+        camera.viewport            // The camera's viewport object
+    );
+    
+    objectKeywordPopup.style.left = `${screenPosition.x / window.devicePixelRatio}px`;
+    objectKeywordPopup.style.top = `${screenPosition.y / window.devicePixelRatio - 50}px`; // Adjust offset
+    objectKeywordPopup.textContent = keywords.join(', ');
+    objectKeywordPopup.classList.remove('hidden');
+}
+
+export function hideKeywordPopup() {
+    objectKeywordPopup.classList.add('hidden'); 
 }

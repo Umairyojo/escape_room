@@ -1,5 +1,8 @@
+// Escape-Game/js/gameState.js
 // This file acts as the single source of truth for the game's state.
 // Any module can import and modify the state using these functions.
+
+const GAME_LOGS_KEY = 'escapeGameLogs'; // Key for localStorage
 
 const gameState = {
     isPaused: true,
@@ -11,7 +14,12 @@ const gameState = {
     chatHistory: [],
     trustScore: 0,
     isThinking: false,
-    playerName: 'Player', // NEW: Default player name
+    playerName: 'Player',
+    score: 0, 
+    escapeMethod: '', 
+    // New logging state
+    gameLogs: JSON.parse(localStorage.getItem(GAME_LOGS_KEY)) || [], // Load existing logs
+    currentLog: null, // Log for the current game session
 };
 
 export function getGameState() {
@@ -19,12 +27,15 @@ export function getGameState() {
 }
 
 export function setGameState(newState) {
-    // Object.assign merges the new state properties into the existing state object.
     Object.assign(gameState, newState);
 }
 
 export function resetGameState() {
-    // Resets the state to its initial values for a new game.
+    // Save current game log before resetting
+    if (gameState.currentLog) {
+        saveGameLog();
+    }
+
     Object.assign(gameState, {
         isPaused: true,
         promptCount: 0,
@@ -35,6 +46,52 @@ export function resetGameState() {
         chatHistory: [],
         trustScore: 0,
         isThinking: false,
-        playerName: 'Player', // Reset player name
+        playerName: 'Player',
+        score: 0, 
+        escapeMethod: '', 
+        currentLog: null, // Reset current log for new game
     });
 }
+
+// --- New Logging Functions ---
+export function initNewGameLog() {
+    const now = new Date();
+    gameState.currentLog = {
+        sessionId: Date.now(),
+        timestamp: now.toLocaleString(),
+        playerName: gameState.playerName,
+        log: []
+    };
+    // Update player name in currentLog if it was set after init
+    Object.defineProperty(gameState.currentLog, 'playerName', {
+        get: () => gameState.playerName,
+        enumerable: true,
+        configurable: true
+    });
+}
+
+export function addLogEntry(type, content) {
+    if (gameState.currentLog) {
+        gameState.currentLog.log.push({ type, content, timestamp: new Date().toLocaleTimeString() });
+    }
+}
+
+export function saveGameLog() {
+    if (gameState.currentLog && gameState.currentLog.log.length > 0) {
+        // Remove old entry if restarting game and session ID is the same (e.g., via reload)
+        gameState.gameLogs = gameState.gameLogs.filter(log => log.sessionId !== gameState.currentLog.sessionId);
+        gameState.gameLogs.push(gameState.currentLog);
+        localStorage.setItem(GAME_LOGS_KEY, JSON.stringify(gameState.gameLogs));
+        console.log("Game log saved to localStorage:", gameState.currentLog);
+    }
+}
+
+// Optional: Function to clear all stored logs (for development/testing)
+export function clearAllGameLogs() {
+    localStorage.removeItem(GAME_LOGS_KEY);
+    gameState.gameLogs = [];
+    console.log("All game logs cleared from localStorage.");
+}
+
+// Ensure logs are saved on page unload
+window.addEventListener('beforeunload', saveGameLog);

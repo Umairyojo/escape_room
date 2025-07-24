@@ -5,26 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yandere AI Escape Room</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Babylon.js and other libraries -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script> <!-- NEW: For AdvancedDynamicTexture -->
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- The canvas where the 3D game will be rendered -->
     <canvas id="renderCanvas"></canvas>
 
-    <!-- UI Overlay -->
     <div id="ui-container">
-        <!-- Crosshair -->
         <div id="crosshair">+</div>
 
-        <!-- Interaction Prompt -->
         <div id="interaction-prompt" class="hidden">
             <p>Press [E] to interact</p>
         </div>
 
-        <!-- Main UI Panel -->
+        <div id="object-keyword-popup" class="hidden">
+            </div>
+
         <div id="ui-panel">
             <div id="eva-profile">
                 <div id="eva-portrait" class="mood-calm">
@@ -35,12 +33,12 @@
             </div>
             <div id="dialogue-box">
                 <div id="dialogue-content">
-                    <!-- Messages will be injected here by ui.js -->
-                </div>
+                    </div>
             </div>
             <div id="input-area">
                  <div class="prompt-info">
                     <p>Prompts Used: <span id="prompt-count">0</span></p>
+                    <p>Score: <span id="score">0</span></p> <p>Attempts Left: <span id="attempts-left">3</span></p> 
                     <div id="key-icon" class="hidden">🔑</div>
                 </div>
                 <form id="prompt-form">
@@ -54,14 +52,13 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="modal-container" class="visible">
         <div id="welcome-modal">
             <h1>Escape the Room</h1>
             <p>You wake up in a room with E.V.A., your AI companion. She seems... different. More possessive.</p>
             <p>The door is locked. She's the only one who can open it.</p>
             <p>Use W/A/S/D to move, Mouse to look, and [E] to interact with objects. Your goal is to escape.</p>
-            <div class="player-name-input-container"> <!-- NEW: Player Name Input -->
+            <div class="player-name-input-container">
                 <label for="player-name-input">Your Name:</label>
                 <input type="text" id="player-name-input" placeholder="Enter your name">
             </div>
@@ -70,16 +67,16 @@
         <div id="end-modal" class="hidden">
             <h1 id="end-title"></h1>
             <p id="end-message"></p>
-            <p>Final Prompt Score: <span id="final-score"></span></p>
+            <p id="end-player-name"></p> 
+            <p>Final Score: <span id="final-score"></span></p>
+            <p>Method of Escape: <span id="escape-method-summary"></span></p>
             <button id="restart-game-btn">Play Again</button>
         </div>
     </div>
 
-    <!-- Audio element for TTS -->
     <audio id="tts-audio"></audio>
 
-    <!-- Game Scripts -->
     <script type="module" src="js/main.js"></script>
-    <script type="module" src="js/celebration.js"></script> <!-- NEW: Celebration script -->
+    <script type="module" src="js/celebration.js"></script>
 </body>
 </html>

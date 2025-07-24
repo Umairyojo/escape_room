@@ -46,7 +46,24 @@ body, html {
     border-radius: 10px;
     border: 1px solid #fff;
     font-size: 16px;
+    text-align: center; /* Center the text */
 }
+
+/* NEW: Object Keyword Popup Styling */
+#object-keyword-popup {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    white-space: nowrap; /* Keep keywords on one line */
+    transform: translate(-50%, -100%); /* Position above the hovered point */
+    pointer-events: none; /* Do not block interaction with objects */
+    z-index: 90;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
 
 /* Main UI Panel (Bottom Left) */
 #ui-panel {
@@ -186,27 +203,100 @@ body, html {
 }
 
 #welcome-modal, #end-modal {
-    background-color: #1f2937; /* gray-800 */
-    padding: 30px;
-    border-radius: 15px;
-    border: 1px solid #4b5563;
+    background-color: #1a1a2e; /* Darker, richer background */
+    padding: 40px; /* More padding */
+    border-radius: 20px; /* More rounded corners */
+    border: 3px solid #e94560; /* Vibrant border color */
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.5); /* Glowing shadow */
     text-align: center;
-    max-width: 500px;
+    max-width: 550px; /* Slightly wider */
     pointer-events: all;
+    color: #e0e0e0; /* Lighter text color */
+    font-family: 'Orbitron', sans-serif; /* A more sci-fi/modern font */
+    animation: fadeInScale 0.8s ease-out; /* Add entry animation */
 }
-#welcome-modal h1, #end-modal h1 { font-size: 2em; margin-bottom: 15px; color: #f9a8d4; }
-#welcome-modal p, #end-modal p { margin-bottom: 20px; line-height: 1.6; }
-#welcome-modal button, #end-modal button {
-    background-color: #db2777;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    padding: 12px 25px;
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#welcome-modal h1, #end-modal h1 { 
+    font-size: 2.8em; /* Larger title */
+    margin-bottom: 20px; 
+    color: #00e6e6; /* Bright cyan for titles */
+    text-shadow: 0 0 10px rgba(0, 230, 230, 0.7); /* Subtle text glow */
+}
+#welcome-modal p, #end-modal p { 
+    margin-bottom: 25px; 
+    line-height: 1.8; 
     font-size: 1.1em;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
-#welcome-modal button:hover, #end-modal button:hover { background-color: #be185d; }
+#welcome-modal button, #end-modal button {
+    background-color: #e94560; /* Match border color */
+    border: none;
+    border-radius: 10px; /* More rounded buttons */
+    color: white;
+    padding: 15px 30px; /* Larger buttons */
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+#welcome-modal button:hover, #end-modal button:hover { 
+    background-color: #c2314d; 
+    transform: translateY(-3px); /* Lift effect on hover */
+}
+#welcome-modal button:active, #end-modal button:active {
+    transform: translateY(0);
+}
+
+/* Player Name Input Styling */
+.player-name-input-container {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.player-name-input-container label {
+    font-size: 1.1em;
+    color: #00e6e6;
+    margin-bottom: 8px;
+}
+
+#player-name-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid #00e6e6;
+    border-radius: 8px;
+    color: #e0e0e0;
+    padding: 12px 15px; /* Increased padding */
+    font-size: 1.1em;
+    width: 80%; /* Standard width */
+    max-width: 300px;
+    text-align: center;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#player-name-input:focus {
+    outline: none;
+    border-color: #e94560;
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+}
+
+/* End Modal Specifics */
+#end-modal p {
+    margin-bottom: 10px; /* Less space between final score and method */
+}
+
+#end-player-name { /* NEW: Style for player name on end screen */
+    font-size: 1.5em;
+    color: #00e6e6;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 8px rgba(0, 230, 230, 0.5);
+}
+
 
 /* Scrollbar styling */
 #dialogue-box::-webkit-scrollbar { width: 8px; }
